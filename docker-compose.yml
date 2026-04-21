@@ -5,4 +5,7 @@ services:
       - "8787:8787"
     volumes:
       - ./data:/data
+    environment:
+      APP_USER: ${APP_USER:-}
+      APP_PASS: ${APP_PASS:-}
     restart: unless-stopped

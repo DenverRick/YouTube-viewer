@@ -15,6 +15,22 @@ app.addContentTypeParser(['text/xml', 'application/xml', 'text/x-opml'], { parse
   done(null, { xml: body });
 });
 
+const APP_USER = process.env.APP_USER;
+const APP_PASS = process.env.APP_PASS;
+if (APP_USER && APP_PASS) {
+  const expected = 'Basic ' + Buffer.from(`${APP_USER}:${APP_PASS}`).toString('base64');
+  app.addHook('onRequest', async (req, reply) => {
+    const header = req.headers.authorization ?? '';
+    if (header !== expected) {
+      reply.header('WWW-Authenticate', 'Basic realm="yt-subscriptions"');
+      reply.code(401).send('Authentication required');
+    }
+  });
+  app.log.info('HTTP Basic Auth enabled');
+} else {
+  app.log.warn('APP_USER/APP_PASS not set — running without auth');
+}
+
 await app.register(categoriesRoutes);
 await app.register(channelsRoutes);
 await app.register(videosRoutes);
