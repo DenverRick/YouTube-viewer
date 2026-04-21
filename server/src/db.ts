@@ -45,6 +45,12 @@ CREATE INDEX IF NOT EXISTS idx_videos_channel_published ON videos(channel_id, pu
 CREATE INDEX IF NOT EXISTS idx_videos_published ON videos(published_at DESC);
 `);
 
+// Migration: add duration_seconds column if missing (for Shorts filter).
+const videoCols = db.prepare("PRAGMA table_info(videos)").all() as { name: string }[];
+if (!videoCols.some((c) => c.name === 'duration_seconds')) {
+  db.exec('ALTER TABLE videos ADD COLUMN duration_seconds INTEGER');
+}
+
 export type Category = {
   id: number;
   parent_id: number | null;
@@ -74,4 +80,5 @@ export type Video = {
   thumbnail_url: string | null;
   description: string | null;
   watched: number;
+  duration_seconds: number | null;
 };

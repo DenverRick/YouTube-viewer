@@ -29,7 +29,10 @@ export async function videosRoutes(app: FastifyInstance) {
       const limit = Math.min(Number(req.query.limit ?? 50), 200);
       const offset = Number(req.query.offset ?? 0);
 
-      const where: string[] = [];
+      // Hide Shorts (duration 0-59s). NULL = not yet backfilled. -1 = unknown
+      // (rate-limited / deleted / consent wall) — keep both visible so we only
+      // hide *definitively* known Shorts.
+      const where: string[] = ['(v.duration_seconds IS NULL OR v.duration_seconds < 0 OR v.duration_seconds >= 60)'];
       const params: any[] = [];
 
       if (category_id) {
@@ -52,7 +55,7 @@ export async function videosRoutes(app: FastifyInstance) {
       const sql = `
         SELECT v.*, c.title AS channel_title, c.yt_channel_id AS yt_channel_id, c.thumbnail_url AS channel_thumbnail
         FROM videos v JOIN channels c ON c.id = v.channel_id
-        ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+        WHERE ${where.join(' AND ')}
         ORDER BY v.published_at DESC
         LIMIT ? OFFSET ?
       `;

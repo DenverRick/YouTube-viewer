@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { db, type Channel } from '../db.js';
-import { fetchChannelFeed } from './fetcher.js';
+import { fetchChannelFeed, backfillAllMissingDurations } from './fetcher.js';
 
 const CONCURRENCY = 4;
 let running = false;
@@ -39,6 +39,8 @@ async function tick() {
 export function startScheduler() {
   cron.schedule('* * * * *', () => { tick().catch(console.error); });
   setTimeout(() => tick().catch(console.error), 2000);
+  // Backfill missing durations (for rows imported before the Shorts filter shipped).
+  setTimeout(() => backfillAllMissingDurations().catch(console.error), 5000);
 }
 
 export async function refreshChannel(channelId: number) {
